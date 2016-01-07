@@ -1,0 +1,12 @@
+source 'https://github.com/CocoaPods/Specs.git'
+use_frameworks!
+
+target 'RJWebView_Example', :exclusive => true do
+  pod "RJWebView", :path => "../"
+end
+
+target 'RJWebView_Tests', :exclusive => true do
+  pod "RJWebView", :path => "../"
+
+  
+end
