@@ -10,7 +10,6 @@
 #import "__RJInternalWebViewProtocol.h"
 #import "__RJUIWebView.h"
 #import "__RJWKWebView.h"
-#import "RJWebViewLogging.h"
 
 @interface RJWebView () <RJWebViewDelegate>
 
@@ -172,7 +171,7 @@ static void *LocalKVOContext = &(LocalKVOContext);
 
 - (BOOL)webView:(RJWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
 {
-    NBULogDebug(@">>> webView:shouldStartLoad:* >>> %@, %@", webView, request);
+    NSLog(@"RJWebView >>> webView:shouldStartLoad:* >>> %@, %@", webView, request);
     if ([self.delegate respondsToSelector:@selector(webView:shouldStartLoadWithRequest:navigationType:)])
         return [self.delegate webView:self shouldStartLoadWithRequest:request navigationType:navigationType];
     return YES;
@@ -180,21 +179,21 @@ static void *LocalKVOContext = &(LocalKVOContext);
 
 - (void)webViewDidStartLoad:(RJWebView *)webView
 {
-    NBULogDebug(@">>> webViewDidStartLoad: >>> %@", webView);
+    NSLog(@"RJWebView >>> webViewDidStartLoad: >>> %@", webView);
     if ([self.delegate respondsToSelector:@selector(webViewDidStartLoad:)])
         [self.delegate webViewDidStartLoad:self];
 }
 
 - (void)webViewDidFinishLoad:(RJWebView *)webView
 {
-    NBULogDebug(@">>> webViewDidFinishLoad: >>> %@", webView);
+    NSLog(@"RJWebView >>> webViewDidFinishLoad: >>> %@", webView);
     if ([self.delegate respondsToSelector:@selector(webViewDidFinishLoad:)])
         [self.delegate webViewDidFinishLoad:self];
 }
 
 - (void)webView:(RJWebView *)webView didFailLoadWithError:(NSError *)error
 {
-    NBULogError(@">>> webView:didFailLoadWithError: >>> %@, %@", webView, error);
+    NSLog(@"RJWebView >>> webView:didFailLoadWithError: >>> %@, %@", webView, error);
     if ([self.delegate respondsToSelector:@selector(webView:didFailLoadWithError:)])
         [self.delegate webView:self didFailLoadWithError:error];
 }
