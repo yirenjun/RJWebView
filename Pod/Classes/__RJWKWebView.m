@@ -16,119 +16,89 @@ static UIWebViewNavigationType toClassicNavigationType(WKNavigationType type) {
     return (UIWebViewNavigationType)type;
 }
 
-@interface __RJWKWebView (Inner)
+#pragma mark - WKWebView+rj_private
 
-- (void)rjDynamicHack__setCustomUserAgent:(NSString *)userAgent;
-- (void)rjDynamicHack__setApplicationNameForUserAgent:(NSString *)userAgent;
-- (NSString *)rjDynamicHack__userAgent;
+@interface WKWebView (rj_private)
+
+- (void)setApplicationNameForUserAgent:(NSString *)appName;
+
+- (NSString *)rj_private__userAgent;
+- (void)rj_private__setCustomUserAgent:(NSString *)userAgent;
+- (void)rj_private__setApplicationNameForUserAgent:(NSString *)userAgent;
 
 @end
 
+#pragma mark - __RJWKWebView
+
 @interface __RJWKWebView () <WKNavigationDelegate>
 
-@property (weak, nonatomic) id<RJWebViewDelegate> delegate;
+@property (nonatomic, weak) id<RJWebViewDelegate> delegate;
 
 @end
 
 @implementation __RJWKWebView
 
-@dynamic allowsBackForwardNavigationGestures;
-@dynamic scrollView;
-
-+ (WKProcessPool *)sharedProcessPool
-{
-    static WKProcessPool *processPool;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        processPool = [WKProcessPool new];
-    });
-    return processPool;
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        static WKProcessPool *processPool;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            processPool = [WKProcessPool new];
+        });
+        self.configuration.processPool = processPool;
+    }
+    return self;
 }
 
-- (instancetype)_initWithFrame:(CGRect)frame
-{
-    WKWebViewConfiguration *internalConfig = [[WKWebViewConfiguration alloc] init];
-    internalConfig.processPool = [[self class] sharedProcessPool];
-    return [self initWithFrame:frame configuration:internalConfig];
+- (void)dealloc {
+    
 }
 
-- (void)setDelegate:(id<RJWebViewDelegate>)delegate
-{
+- (void)setDelegate:(id<RJWebViewDelegate>)delegate {
     _delegate = delegate;
     self.navigationDelegate = _delegate ? self : nil;
 }
 
-- (void)rj_setCustomUserAgent:(NSString *)customUserAgent
-{
-    return [self rjDynamicHack__setCustomUserAgent:customUserAgent];
+- (NSString *)currentUserAgent {
+    return [self rj_private__userAgent];
 }
 
-- (void)rj_setApplicationNameForUserAgent:(NSString *)appName
-{
-    [self rjDynamicHack__setApplicationNameForUserAgent:appName];
+- (void)setCustomUserAgent:(NSString *)customUserAgent {
+    if ([super respondsToSelector:@selector(setCustomUserAgent:)])
+        [super setCustomUserAgent:customUserAgent];
+    else
+        return [self rj_private__setCustomUserAgent:customUserAgent];
 }
 
-- (NSString *)currentUserAgent
-{
-    return [self rjDynamicHack__userAgent];
+- (void)setApplicationNameForUserAgent:(NSString *)appName {
+    if ([super respondsToSelector:@selector(setApplicationNameForUserAgent:)])
+        [super setApplicationNameForUserAgent:appName];
+    else
+        [self rj_private__setApplicationNameForUserAgent:appName];
 }
 
-- (BOOL)allowsInlineMediaPlayback
-{
+- (BOOL)allowsInlineMediaPlayback {
     return self.configuration.allowsInlineMediaPlayback;
 }
 
-- (void)setAllowsInlineMediaPlayback:(BOOL)allowsInlineMediaPlayback
-{
+- (void)setAllowsInlineMediaPlayback:(BOOL)allowsInlineMediaPlayback {
     self.configuration.allowsInlineMediaPlayback = allowsInlineMediaPlayback;
 }
 
-- (BOOL)mediaPlaybackRequiresUserAction
-{
+- (BOOL)mediaPlaybackRequiresUserAction {
     if ([self.configuration respondsToSelector:@selector(requiresUserActionForMediaPlayback)])
         return self.configuration.requiresUserActionForMediaPlayback;
     return self.configuration.mediaPlaybackRequiresUserAction;
 }
 
-- (void)setMediaPlaybackRequiresUserAction:(BOOL)mediaPlaybackRequiresUserAction
-{
+- (void)setMediaPlaybackRequiresUserAction:(BOOL)mediaPlaybackRequiresUserAction {
     if ([self.configuration respondsToSelector:@selector(setRequiresUserActionForMediaPlayback:)])
         return [self.configuration setRequiresUserActionForMediaPlayback:mediaPlaybackRequiresUserAction];
     self.configuration.mediaPlaybackRequiresUserAction = mediaPlaybackRequiresUserAction;
 }
 
-- (void)setupUserScripts
-{
-    [self.configuration.userContentController removeAllUserScripts];
-}
-
-- (void)setupCookies:(NSArray *)cookies
-{
-    [self setupUserScripts];
-    NSMutableString *js = @"".mutableCopy;
-    for (NSHTTPCookie *cookie in cookies) {
-        [js appendFormat:@"document.cookie = "];
-        [js appendFormat:@"encodeURIComponent('%@') + '=' + encodeURIComponent('%@') +", cookie.name, cookie.value];
-        if (cookie.expiresDate) {
-            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-            [dateFormatter setTimeZone:[NSTimeZone timeZoneWithName:@"UTC"]];
-            [dateFormatter setDateStyle:NSDateFormatterLongStyle];
-            [js appendFormat:@"'; expires=%@' +", [dateFormatter stringFromDate:cookie.expiresDate]];
-        }
-        if (cookie.domain)
-            [js appendFormat:@"'; domain=%@' +", cookie.domain];
-        if (cookie.path)
-            [js appendFormat:@"'; path=%@' +", cookie.path];
-        if (cookie.secure)
-            [js appendFormat:@"'; secure' +"];
-        [js appendFormat:@"''"];
-    }
-    WKUserScript *cookieScript = [[WKUserScript alloc] initWithSource:js injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
-    [self.configuration.userContentController addUserScript:cookieScript];
-}
-
-- (nullable NSString *)stringByEvaluatingJavaScriptFromString:(NSString *)script
-{
+- (nullable NSString *)stringByEvaluatingJavaScriptFromString:(NSString *)script {
     __block NSString *resultString = nil;
     [self evaluateJavaScript:script completionHandler:^(id result, NSError *error) {
         if (error == nil) {
@@ -146,10 +116,41 @@ static UIWebViewNavigationType toClassicNavigationType(WKNavigationType type) {
     return resultString;
 }
 
+//- (void)setupUserScripts
+//{
+//    [self.configuration.userContentController removeAllUserScripts];
+//}
+//
+//- (void)setupCookies:(NSArray *)cookies
+//{
+//    [self setupUserScripts];
+//    NSMutableString *js = @"".mutableCopy;
+//    for (NSHTTPCookie *cookie in cookies) {
+//        [js appendFormat:@"document.cookie = "];
+//        [js appendFormat:@"encodeURIComponent('%@') + '=' + encodeURIComponent('%@') +", cookie.name, cookie.value];
+//        if (cookie.expiresDate) {
+//            NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+//            [dateFormatter setTimeZone:[NSTimeZone timeZoneWithName:@"UTC"]];
+//            [dateFormatter setDateStyle:NSDateFormatterLongStyle];
+//            [js appendFormat:@"'; expires=%@' +", [dateFormatter stringFromDate:cookie.expiresDate]];
+//        }
+//        if (cookie.domain)
+//            [js appendFormat:@"'; domain=%@' +", cookie.domain];
+//        if (cookie.path)
+//            [js appendFormat:@"'; path=%@' +", cookie.path];
+//        if (cookie.secure)
+//            [js appendFormat:@"'; secure' +"];
+//        [js appendFormat:@"''"];
+//    }
+//    WKUserScript *cookieScript = [[WKUserScript alloc] initWithSource:js injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+//    [self.configuration.userContentController addUserScript:cookieScript];
+//}
+
+
+
 #pragma mark - WKNavigationDelegate
 
-- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
-{
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     if ([self.delegate respondsToSelector:@selector(webView:shouldStartLoadWithRequest:navigationType:)]) {
         BOOL flag = [self.delegate webView:(id)self
                 shouldStartLoadWithRequest:navigationAction.request
@@ -160,20 +161,17 @@ static UIWebViewNavigationType toClassicNavigationType(WKNavigationType type) {
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
-- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation
-{
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
     if ([self.delegate respondsToSelector:@selector(webViewDidStartLoad:)])
         [self.delegate webViewDidStartLoad:(id)self];
 }
 
-- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation
-{
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     if ([self.delegate respondsToSelector:@selector(webViewDidFinishLoad:)])
         [self.delegate webViewDidFinishLoad:(id)self];
 }
 
-- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
-{
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     if ([self.delegate respondsToSelector:@selector(webView:didFailLoadWithError:)])
         [self.delegate webView:(id)self didFailLoadWithError:error];
 }
@@ -185,11 +183,11 @@ static UIWebViewNavigationType toClassicNavigationType(WKNavigationType type) {
     NSMethodSignature *methodSignature = [super methodSignatureForSelector:aSelector];
     if (methodSignature == nil) {
         char *typeEncodings = NULL;
-        if (aSelector == @selector(rjDynamicHack__setCustomUserAgent:)) {
+        if (aSelector == @selector(rj_private__setCustomUserAgent:)) {
             asprintf(&typeEncodings, "%s%s%s%s", @encode(void), @encode(id), @encode(SEL), @encode(NSString *));
-        } else if (aSelector == @selector(rjDynamicHack__setApplicationNameForUserAgent:)) {
+        } else if (aSelector == @selector(rj_private__setApplicationNameForUserAgent:)) {
             asprintf(&typeEncodings, "%s%s%s%s", @encode(void), @encode(id), @encode(SEL), @encode(NSString *));
-        } else if (aSelector == @selector(rjDynamicHack__userAgent)) {
+        } else if (aSelector == @selector(rj_private__userAgent)) {
             asprintf(&typeEncodings, "%s%s%s", @encode(NSString *), @encode(id), @encode(SEL));
         }
         if (typeEncodings) {
@@ -204,7 +202,7 @@ static UIWebViewNavigationType toClassicNavigationType(WKNavigationType type) {
 {
     SEL selector = invocation.selector;
     const char *selName = sel_getName(selector);
-    const char *prefix = "rjDynamicHack_";
+    const char *prefix = "rj_private_";
     if (strncmp(selName, prefix, strlen(prefix)) == 0) {
         selName = (char *)(selName + strlen(prefix));
         if (selName[0] != '\0') {

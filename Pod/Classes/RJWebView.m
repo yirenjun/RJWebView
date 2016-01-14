@@ -7,28 +7,18 @@
 //
 
 #import "RJWebView.h"
+#import "__RJInternalWebViewProtocol.h"
 #import "__RJUIWebView.h"
 #import "__RJWKWebView.h"
-#import <objc/runtime.h>
 #import "RJWebViewLogging.h"
-
-#define WebView ([(NSClassFromString(@"WKWebView") ? [__RJWKWebView class] : [__RJUIWebView class]) alloc])
 
 @interface RJWebView () <RJWebViewDelegate>
 
-@property (assign, nonatomic) BOOL classic;
-@property (strong, nonatomic) UIView<RJWebViewProtocol> *innerWebView;
+@property (strong, nonatomic) UIView<__RJInternalWebViewProtocol> *innerWebView;
 
 @end
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wprotocol"
-
 @implementation RJWebView
-
-@dynamic allowsBackForwardNavigationGestures;
-@dynamic scrollView;
-@dynamic allowsInlineMediaPlayback;
 
 @synthesize URL;
 @synthesize title;
@@ -37,33 +27,35 @@
 @synthesize canGoBack;
 @synthesize canGoForward;
 
-- (instancetype)initWithFrame:(CGRect)frame
-{
-    return [[super initWithFrame:frame] setup];
-}
+static void *LocalKVOContext = &(LocalKVOContext);
 
-- (instancetype)initWithFrame:(CGRect)frame classic:(BOOL)classic
-{
+- (instancetype _Null_unspecified)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
-    if (self) self.classic = classic;
+    if (self) {
+        _needsToUseWK = false;
+    }
     return [self setup];
 }
 
-- (void)awakeFromNib
-{
+- (instancetype _Null_unspecified)initWithFrame:(CGRect)frame withWK:(BOOL)needsToUseWK {
+    self = [super initWithFrame:frame];
+    if (self) {
+        _needsToUseWK = needsToUseWK;
+    }
+    return [self setup];
+}
+
+- (void)awakeFromNib {
     [self setup];
 }
 
-static void *LocalKVOContext = &(LocalKVOContext);
-
-- (instancetype)setup
-{
+- (instancetype)setup {
     if (self) {
         [self addSubview:^(void){
-            self.innerWebView = self.classic ? [[__RJUIWebView alloc] _initWithFrame:self.bounds] : [WebView _initWithFrame:self.bounds];
+            self.innerWebView = (self.needsToUseWK && NSClassFromString(@"WKWebView"))
+            ? [[__RJWKWebView alloc] initWithFrame:self.bounds]
+            : [[__RJUIWebView alloc] initWithFrame:self.bounds];
             self.innerWebView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            self.innerWebView.allowsInlineMediaPlayback = YES;
-            [self.innerWebView setDelegate:_delegate ? self : nil];
             return self.innerWebView;
         }()];
         [self.innerWebView addObserver:self forKeyPath:@"URL" options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial) context:LocalKVOContext];
@@ -76,8 +68,7 @@ static void *LocalKVOContext = &(LocalKVOContext);
     return self;
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
     [self.innerWebView removeObserver:self forKeyPath:@"URL" context:LocalKVOContext];
     [self.innerWebView removeObserver:self forKeyPath:@"title" context:LocalKVOContext];
     [self.innerWebView removeObserver:self forKeyPath:@"estimatedProgress" context:LocalKVOContext];
@@ -85,17 +76,6 @@ static void *LocalKVOContext = &(LocalKVOContext);
     [self.innerWebView removeObserver:self forKeyPath:@"canGoBack" context:LocalKVOContext];
     [self.innerWebView removeObserver:self forKeyPath:@"canGoForward" context:LocalKVOContext];
     [self.innerWebView setDelegate:nil];
-}
-
-- (id)forwardingTargetForSelector:(SEL)aSelector
-{
-    if (protocol_getMethodDescription(@protocol(RJWebViewProtocol), aSelector, YES, YES).name ||
-        protocol_getMethodDescription(@protocol(RJWebViewProtocol), aSelector, YES, NO).name ||
-        protocol_getMethodDescription(@protocol(RJWebViewProtocol), aSelector, NO, YES).name ||
-        protocol_getMethodDescription(@protocol(RJWebViewProtocol), aSelector, NO, NO).name) {
-        return self.innerWebView;
-    }
-    return nil;
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
@@ -111,10 +91,81 @@ static void *LocalKVOContext = &(LocalKVOContext);
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
 }
 
-- (void)setDelegate:(id<RJWebViewDelegate>)delegate
-{
+- (void)setDelegate:(id<RJWebViewDelegate>)delegate {
     _delegate = delegate;
     [self.innerWebView setDelegate:_delegate ? self : nil];
+}
+
+- (UIScrollView *)scrollView {
+    return [self.innerWebView scrollView];
+}
+
+- (BOOL)allowsBackForwardNavigationGestures {
+    return self.innerWebView.allowsBackForwardNavigationGestures;
+}
+
+- (void)setAllowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures {
+    self.innerWebView.allowsBackForwardNavigationGestures = allowsBackForwardNavigationGestures;
+}
+
+- (BOOL)allowsInlineMediaPlayback {
+    return self.innerWebView.allowsInlineMediaPlayback;
+}
+
+- (void)setAllowsInlineMediaPlayback:(BOOL)allowsInlineMediaPlayback {
+    [self.innerWebView setAllowsInlineMediaPlayback:allowsInlineMediaPlayback];
+}
+
+- (BOOL)mediaPlaybackRequiresUserAction {
+    return self.innerWebView.mediaPlaybackRequiresUserAction;
+}
+
+- (void)setMediaPlaybackRequiresUserAction:(BOOL)mediaPlaybackRequiresUserAction {
+    return [self.innerWebView setMediaPlaybackRequiresUserAction:mediaPlaybackRequiresUserAction];
+}
+
+- (NSString * _Nullable)currentUserAgent {
+    return [self.innerWebView currentUserAgent];
+}
+
+- (void)setCustomUserAgent:(NSString * _Nullable)userAgent {
+    [self.innerWebView setCustomUserAgent:userAgent];
+}
+
+- (void)setApplicationNameForUserAgent:(NSString * _Nullable)appName {
+    [self.innerWebView setApplicationNameForUserAgent:appName];
+}
+
+- (void)loadRequest:(NSURLRequest * _Nonnull)request {
+    [self.innerWebView loadRequest:request];
+}
+
+- (void)loadHTMLString:(NSString *_Nonnull)string baseURL:(NSURL *_Nonnull)baseURL {
+    [self.innerWebView loadHTMLString:string baseURL:baseURL];
+}
+
+- (void)stopLoading {
+    [self.innerWebView stopLoading];
+}
+
+- (void)reload {
+    [self.innerWebView reload];
+}
+
+- (void)goBack {
+    [self.innerWebView goBack];
+}
+
+- (void)goForward {
+    [self.innerWebView goForward];
+}
+
+- (nullable NSString *)stringByEvaluatingJavaScriptFromString:(NSString * _Nonnull)script {
+    return [self.innerWebView stringByEvaluatingJavaScriptFromString:script];
+}
+
+- (void)evaluateJavaScript:(NSString *_Nonnull)javaScriptString completionHandler:(void (^ _Nullable)(id _Nullable, NSError * _Nullable))completionHandler {
+    [self.innerWebView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
 }
 
 #pragma mark - RJWebViewDelegate
@@ -149,5 +200,3 @@ static void *LocalKVOContext = &(LocalKVOContext);
 }
 
 @end
-
-#pragma clang diagnostic pop

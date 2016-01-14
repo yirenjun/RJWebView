@@ -7,8 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "__RJWebViewProtocol.h"
+#import "__RJInternalWebViewProtocol.h"
 
-@interface __RJUIWebView : UIWebView <RJWebViewProtocolInternal>
+@interface __RJUIWebView : UIWebView <__RJInternalWebViewProtocol>
 
 @end
