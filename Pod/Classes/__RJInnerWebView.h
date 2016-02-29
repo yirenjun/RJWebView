@@ -13,7 +13,6 @@
 
 - (double)estimatedProgress;
 
-- (NSString *)userAgentForURL:(NSURL *)URL;
 - (void)setCustomUserAgent:(NSString *)userAgent;
 - (void)setApplicationNameForUserAgent:(NSString *)userAgent;
 

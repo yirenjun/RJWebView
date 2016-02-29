@@ -23,6 +23,7 @@
 @property (nonatomic) BOOL allowsBackForwardNavigationGestures;     // 开启前进后退滑动手势，目前只在WK内核时有效
 @property (nonatomic) BOOL allowsInlineMediaPlayback;
 @property (nonatomic) BOOL mediaPlaybackRequiresUserAction;
+@property (nonatomic) BOOL scalesPageToFit;
 
 // Key-Value observing (KVO) compliant
 @property (nonatomic, readonly, copy)                           NSURL *     _Nullable URL;

@@ -16,6 +16,7 @@
 @property (nonatomic) BOOL allowsBackForwardNavigationGestures;
 @property (nonatomic) BOOL allowsInlineMediaPlayback;
 @property (nonatomic) BOOL mediaPlaybackRequiresUserAction;
+@property (nonatomic) BOOL scalesPageToFit;
 
 @property (nonatomic, readonly, copy)                           NSURL *     _Nullable URL;
 @property (nonatomic, readonly, copy)                           NSString *  _Nullable title;

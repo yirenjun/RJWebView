@@ -123,6 +123,14 @@ static void *LocalKVOContext = &(LocalKVOContext);
     return [self.innerWebView setMediaPlaybackRequiresUserAction:mediaPlaybackRequiresUserAction];
 }
 
+- (BOOL)scalesPageToFit {
+    return self.innerWebView.scalesPageToFit;
+}
+
+- (void)setScalesPageToFit:(BOOL)scalesPageToFit {
+    [self.innerWebView setScalesPageToFit:scalesPageToFit];
+}
+
 - (NSString * _Nullable)currentUserAgent {
     return [self.innerWebView currentUserAgent];
 }
@@ -165,6 +173,12 @@ static void *LocalKVOContext = &(LocalKVOContext);
 
 - (void)evaluateJavaScript:(NSString *_Nonnull)javaScriptString completionHandler:(void (^ _Nullable)(id _Nullable, NSError * _Nullable))completionHandler {
     [self.innerWebView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+}
+
+- (id)forwardingTargetForSelector:(SEL)aSelector {
+    if (![self respondsToSelector:aSelector]) {
+        return self.innerWebView;
+    }
 }
 
 #pragma mark - RJWebViewDelegate

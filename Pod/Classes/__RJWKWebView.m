@@ -98,6 +98,14 @@ static UIWebViewNavigationType toClassicNavigationType(WKNavigationType type) {
     self.configuration.mediaPlaybackRequiresUserAction = mediaPlaybackRequiresUserAction;
 }
 
+- (BOOL)scalesPageToFit {
+    return YES;// FIXME:
+}
+
+- (void)setScalesPageToFit:(BOOL)scalesPageToFit {
+    return; // FIXME:
+}
+
 - (nullable NSString *)stringByEvaluatingJavaScriptFromString:(NSString *)script {
     __block NSString *resultString = nil;
     [self evaluateJavaScript:script completionHandler:^(id result, NSError *error) {

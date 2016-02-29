@@ -58,7 +58,7 @@
 }
 
 - (NSString *)currentUserAgent {
-    return [[self innerWebView] userAgentForURL:nil];
+    return [(id)[self innerWebView] performSelector:NSSelectorFromString([@"userAgent" stringByAppendingString:@"ForURL:"])];
 }
 
 - (void)setCustomUserAgent:(NSString *)userAgent {
@@ -82,8 +82,7 @@
 }
 
 - (NSURL *)mainFrameURLForInnerWebView {
-    SEL selector = NSSelectorFromString([@"mainF" stringByAppendingString:@"rameURL"]);
-    return ((NSURL *(*)(id, SEL))[self methodForSelector:selector])(self, selector);
+    return [(id)[self innerWebView] performSelector:NSSelectorFromString([@"mainF" stringByAppendingString:@"rameURL"])];
 }
 
 #pragma mark - override 
