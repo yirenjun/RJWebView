@@ -2,9 +2,8 @@
 Pod::Spec.new do |s|
   s.name                  = "RJWebView"
   s.version               = "0.2.0"
-  s.summary               = "A short description of RJWebView."
-  s.description           = <<-DESC
-                            DESC
+  s.summary               = "This's a integration of WKWebView and UIWebView"
+  s.description           = "This's a integration of WKWebView and UIWebView"
 
   s.homepage              = "https://github.com/yirenjun/RJWebView"
   s.license               = 'MIT'
